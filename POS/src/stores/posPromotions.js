@@ -138,16 +138,25 @@ export const usePOSPromotionsStore = defineStore("posPromotions", () => {
 	 */
 	function buildInvoiceData(cartItems) {
 		return {
-			items: cartItems.map(item => ({
-				item_code: item.item_code,
-				item_name: item.item_name,
-				rate: item.price_list_rate || item.rate || 0,
-				qty: item.quantity || item.qty || 1,
-				item_group: item.item_group || "",
-				brand: item.brand || "",
-				uom: item.uom,
-				warehouse: item.warehouse,
-			})),
+			items: cartItems.map(item => {
+				// We want to send the "Standard" discount (ERPNext Pricing Rules)
+				// to the engine so it can correctly apply the Global Cap.
+				const currentTotalDiscount = item.discount_amount || 0
+				const currentPromoDiscount = item._promo_discount || 0
+				const standardDiscount = Math.max(0, currentTotalDiscount - currentPromoDiscount)
+
+				return {
+					item_code: item.item_code,
+					item_name: item.item_name,
+					rate: item.price_list_rate || item.rate || 0,
+					qty: item.quantity || item.qty || 1,
+					discount_amount: standardDiscount,
+					item_group: item.item_group || "",
+					brand: item.brand || "",
+					uom: item.uom,
+					warehouse: item.warehouse,
+				}
+			}),
 		}
 	}
 
