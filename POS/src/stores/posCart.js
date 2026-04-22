@@ -1592,19 +1592,25 @@ export const usePOSCartStore = defineStore("posCart", () => {
 					// Apply discounts to actual cart items
 					let anyChanged = false
 					for (const item of invoiceItems.value) {
-						const promoDiscount = promoDiscountMap[item.item_code]
-						if (promoDiscount && promoDiscount > 0) {
-							// Only apply if not already discounted by pricing rules
-							const hasExistingDiscount = (item.discount_percentage > 0 || item.discount_amount > 0)
-								&& item.pricing_rules && item.pricing_rules.length > 0
+						const newPromoDiscount = promoDiscountMap[item.item_code] || 0
+						const oldPromoDiscount = item._promo_discount || 0
 
-							if (!hasExistingDiscount) {
-								item.discount_amount = promoDiscount
-								item.discount_percentage = 0 // Let recalculate compute from amount
-								item._promotion_applied = true
-								recalculateItem(item)
-								anyChanged = true
-							}
+						if (newPromoDiscount !== oldPromoDiscount || newPromoDiscount > 0) {
+							// To be additive and avoid recalculation conflicts:
+							// 1. Subtract the old promotion portion from the total discount_amount
+							// 2. Add the new promotion portion
+							// 3. Set percentage to 0 to force recalculateItem to use the new amount
+							
+							const currentTotalDiscount = item.discount_amount || 0
+							item.discount_amount = Math.max(0, currentTotalDiscount - oldPromoDiscount + newPromoDiscount)
+							item._promo_discount = newPromoDiscount
+							
+							// We must zero out percentage because recalculateItem prioritizes it over amount
+							// It will be re-synced from the new amount during recalculateItem()
+							item.discount_percentage = 0 
+							
+							recalculateItem(item)
+							anyChanged = true
 						}
 					}
 
@@ -1615,10 +1621,10 @@ export const usePOSCartStore = defineStore("posCart", () => {
 					// No promotions applied — clear any previously applied promotion discounts
 					let anyCleared = false
 					for (const item of invoiceItems.value) {
-						if (item._promotion_applied) {
-							item.discount_amount = 0
+						if (item._promo_discount && item._promo_discount > 0) {
+							item.discount_amount = Math.max(0, (item.discount_amount || 0) - item._promo_discount)
+							item._promo_discount = 0
 							item.discount_percentage = 0
-							item._promotion_applied = false
 							recalculateItem(item)
 							anyCleared = true
 						}
