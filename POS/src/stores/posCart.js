@@ -1,5 +1,6 @@
 import { useInvoice } from "@/composables/useInvoice"
 import { usePOSOffersStore } from "@/stores/posOffers"
+import { usePOSPromotionsStore } from "@/stores/posPromotions"
 import { usePOSSettingsStore } from "@/stores/posSettings"
 import { usePOSShiftStore } from "@/stores/posShift"
 import { parseError } from "@/utils/errorHandler"
@@ -113,6 +114,7 @@ export const usePOSCartStore = defineStore("posCart", () => {
 	} = useInvoice()
 
 	const offersStore = usePOSOffersStore()
+	const promotionsStore = usePOSPromotionsStore()
 	const settingsStore = usePOSSettingsStore()
 
 	// Additional cart state
@@ -1547,6 +1549,19 @@ export const usePOSCartStore = defineStore("posCart", () => {
 			if (signal?.aborted) return
 			console.error("Error in offer synchronization:", error)
 			offerProcessingState.value.error = error.message
+		}
+
+		// === POS PROMOTION ENGINE (V2) ===
+		// Runs after standard pricing rules to layer POS-specific promotions.
+		// This is additive — it doesn't replace the ERPNext pricing rule flow above.
+		if (invoiceItems.value.length > 0 && !signal?.aborted) {
+			try {
+				const invoiceData = promotionsStore.buildInvoiceData(invoiceItems.value)
+				await promotionsStore.evaluatePromotions(invoiceData)
+			} catch (promoError) {
+				// Non-fatal: promotion engine failure shouldn't block the sale
+				console.warn("POS Promotion engine evaluation failed (non-fatal):", promoError)
+			}
 		}
 
 	}

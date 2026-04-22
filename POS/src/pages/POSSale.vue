@@ -357,6 +357,8 @@
 							]"
 							style="min-width: 300px; contain: layout style paint"
 						>
+							<!-- Promotion Engine Banner -->
+							<PromotionBanner />
 							<InvoiceCart
 								:items="cartStore.invoiceItems"
 								:customer="cartStore.customer"
@@ -1008,6 +1010,7 @@ import CreateCustomerDialog from "@/components/sale/CreateCustomerDialog.vue";
 import CustomerDialog from "@/components/sale/CustomerDialog.vue";
 import DraftInvoicesDialog from "@/components/sale/DraftInvoicesDialog.vue";
 import InvoiceCart from "@/components/sale/InvoiceCart.vue";
+import PromotionBanner from "@/components/pos/PromotionBanner.vue";
 import InvoiceHistoryDialog from "@/components/sale/InvoiceHistoryDialog.vue";
 import ItemSelectionDialog from "@/components/sale/ItemSelectionDialog.vue";
 import ItemsSelector from "@/components/sale/ItemsSelector.vue";
