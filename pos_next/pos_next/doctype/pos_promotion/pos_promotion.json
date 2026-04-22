@@ -1,0 +1,200 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "PROMO-.#####",
+ "creation": "2025-04-22 12:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Other",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "promotion_name",
+  "promotion_type",
+  "column_break_1",
+  "branch",
+  "enabled",
+  "stackable",
+  "priority",
+  "section_validity",
+  "start_date",
+  "end_date",
+  "column_break_validity",
+  "start_time",
+  "end_time",
+  "section_rules",
+  "rules",
+  "section_items",
+  "promotion_items",
+  "section_logs",
+  "promotion_logs"
+ ],
+ "fields": [
+  {
+   "fieldname": "promotion_name",
+   "fieldtype": "Data",
+   "label": "Promotion Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "promotion_type",
+   "fieldtype": "Select",
+   "label": "Promotion Type",
+   "options": "\nbuy_x_get_y\ninvoice_discount\ncashback\ntime_based\nfixed_bundle\ncategory_discount",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "in_standard_filter": 1,
+   "description": "Leave blank to apply to all branches"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "stackable",
+   "fieldtype": "Check",
+   "label": "Stackable",
+   "description": "Allow this promotion to stack with other promotions"
+  },
+  {
+   "default": "10",
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "label": "Priority",
+   "description": "Lower number = higher priority (executed first)"
+  },
+  {
+   "fieldname": "section_validity",
+   "fieldtype": "Section Break",
+   "label": "Validity Period"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_validity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Time",
+   "label": "Start Time",
+   "depends_on": "eval:doc.promotion_type=='time_based'",
+   "description": "Active window start (server time)"
+  },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Time",
+   "label": "End Time",
+   "depends_on": "eval:doc.promotion_type=='time_based'",
+   "description": "Active window end (server time)"
+  },
+  {
+   "fieldname": "section_rules",
+   "fieldtype": "Section Break",
+   "label": "Promotion Configuration"
+  },
+  {
+   "fieldname": "rules",
+   "fieldtype": "Table",
+   "label": "Rules",
+   "options": "POS Promotion Rule",
+   "description": "Promotion-specific configuration"
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Eligible Items"
+  },
+  {
+   "fieldname": "promotion_items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "POS Promotion Item",
+   "description": "Items, item groups, or brands eligible for this promotion. Leave empty for all items."
+  },
+  {
+   "fieldname": "section_logs",
+   "fieldtype": "Section Break",
+   "label": "Application Log",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "promotion_logs",
+   "fieldtype": "Table",
+   "label": "Logs",
+   "options": "POS Promotion Log",
+   "read_only": 1,
+   "description": "Audit trail of promotion applications"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-04-22 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS Next",
+ "name": "POS Promotion",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Sales User",
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "promotion_name",
+ "track_changes": 1
+}
