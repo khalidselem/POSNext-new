@@ -525,12 +525,13 @@ class CashbackHandler(BasePromotionHandler):
 		final_total = self._get_final_total(invoice)
 		cashback = flt(final_total * pct / 100, 2)
 
-		if max_cap > 0 and cashback > max_cap:
+		if (max_cap > 0 and cashback > max_cap):
 			cashback = max_cap
 
 		return PromotionResult(
 			promo, success=True,
-			cashback_amount=cashback,
+			discount_amount=cashback,   # Reduces Grand Total
+			cashback_amount=cashback,   # Maintains "Cashback" label in UI
 			message=_("Cashback {0}% = {1} (threshold: {2})").format(pct, cashback, threshold)
 		)
 
