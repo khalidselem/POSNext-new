@@ -370,8 +370,8 @@ class TimeBasedHandler(BasePromotionHandler):
 		if discount_pct <= 0:
 			return False
 
-		start_time = self.get_time_field(config, "start_time")
-		end_time = self.get_time_field(config, "end_time")
+		start_time = self.get_time_field(promo, "start_time")
+		end_time = self.get_time_field(promo, "end_time")
 
 		if not start_time or not end_time:
 			return True  # No time restriction = always active
