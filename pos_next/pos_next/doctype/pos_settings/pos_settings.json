@@ -73,7 +73,13 @@
   "enable_session_lock",
   "session_lock_timeout",
   "barcode_tab",
-  "barcode_rules"
+  "barcode_rules",
+  "promotions_tab",
+  "enable_promotions",
+  "column_break_promotions",
+  "promotion_stacking",
+  "section_break_promotions_list",
+  "promotions"
  ],
  "fields": [
   {
@@ -546,6 +552,45 @@
    "fieldtype": "Table",
    "label": "Barcode Rules",
    "options": "POS Barcode Rules"
+  },
+  {
+   "fieldname": "promotions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Promotions"
+  },
+  {
+   "default": "0",
+   "description": "Enable the POS Promotion Engine for this profile. When enabled, promotions defined below will be automatically evaluated during checkout.",
+   "fieldname": "enable_promotions",
+   "fieldtype": "Check",
+   "label": "Enable Promotion Engine"
+  },
+  {
+   "fieldname": "column_break_promotions",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Best Price",
+   "depends_on": "enable_promotions",
+   "description": "How to handle multiple eligible promotions: 'Best Price' applies only the highest value promotion; 'Stack All' applies all non-conflicting promotions.",
+   "fieldname": "promotion_stacking",
+   "fieldtype": "Select",
+   "label": "Promotion Stacking Rule",
+   "options": "Best Price\nStack All"
+  },
+  {
+   "depends_on": "enable_promotions",
+   "fieldname": "section_break_promotions_list",
+   "fieldtype": "Section Break",
+   "label": "Promotions",
+   "description": "Add and manage promotions for this POS Profile. You can also create promotions from the POS Promotion list view."
+  },
+  {
+   "depends_on": "enable_promotions",
+   "fieldname": "promotions",
+   "fieldtype": "Table",
+   "label": "Promotions",
+   "options": "POS Promotion Detail"
   }
  ],
  "index_web_pages_for_search": 1,

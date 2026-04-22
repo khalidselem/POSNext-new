@@ -90,12 +90,6 @@
 								>
 									{{ __('Sales Management') }}
 								</button>
-								<button
-									@click="activeTab = 'promotions'"
-									:class="['px-4 py-2 text-sm font-medium rounded-md transition-all duration-200', activeTab === 'promotions' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50']"
-								>
-									{{ __('Promotion Settings') }}
-								</button>
 							</div>
 
 							<!-- Stock Settings Section - Prominent -->
@@ -550,10 +544,6 @@
 								</div>
 							</div>
 
-							<!-- Promotion Settings Tab -->
-							<div v-if="activeTab === 'promotions'">
-								<PromotionSettings :posProfile="settings.pos_profile || posProfile" :company="settings.company" />
-							</div>
 
 						</div>
 
@@ -575,7 +565,6 @@
 
 <script setup>
 import CheckboxField from "@/components/settings/CheckboxField.vue"
-import PromotionSettings from "@/components/settings/PromotionSettings.vue"
 import NumberField from "@/components/settings/NumberField.vue"
 import SelectField from "@/components/settings/SelectField.vue"
 import { useToast } from "@/composables/useToast"
