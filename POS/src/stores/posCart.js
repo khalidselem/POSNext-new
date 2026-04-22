@@ -1574,7 +1574,7 @@ export const usePOSCartStore = defineStore("posCart", () => {
 								const code = engineItem.item_code
 								const promoDiscounts = engineItem.promotion_discounts || []
 								for (const pd of promoDiscounts) {
-									if (pd.promotion === result.promotion_name || affectedItems.includes(code)) {
+									if (pd.promotion_id === result.promotion_id || affectedItems.includes(code)) {
 										promoDiscountMap[code] = (promoDiscountMap[code] || 0) + (pd.discount_amount || 0)
 									}
 								}

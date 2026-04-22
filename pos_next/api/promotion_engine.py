@@ -90,6 +90,7 @@ class PromotionResult:
 
 	def to_dict(self):
 		return {
+			"promotion_id": self.promotion.get("name", ""),
 			"promotion_name": self.promotion.get("promotion_name", ""),
 			"promotion_type": self.promotion.get("promotion_type", ""),
 			"success": self.success,
@@ -187,7 +188,7 @@ class FixedBundleHandler(BasePromotionHandler):
 			for _ in range(int(qty)):
 				item_discount = per_item_discount
 				item.setdefault("promotion_discounts", []).append({
-					"promotion": promo.get("name"),
+					"promotion_id": promo.get("name"),
 					"promotion_type": "fixed_bundle",
 					"discount_amount": item_discount,
 				})
@@ -264,7 +265,7 @@ class BuyXGetYHandler(BasePromotionHandler):
 			code = item.get("item_code")
 			if code in discount_per_item:
 				item.setdefault("promotion_discounts", []).append({
-					"promotion": promo.get("name"),
+					"promotion_id": promo.get("name"),
 					"promotion_type": "buy_x_get_y",
 					"discount_amount": discount_per_item[code],
 				})
@@ -318,7 +319,7 @@ class CategoryDiscountHandler(BasePromotionHandler):
 			total_discount += item_discount
 
 			item.setdefault("promotion_discounts", []).append({
-				"promotion": promo.get("name"),
+				"promotion_id": promo.get("name"),
 				"promotion_type": "category_discount",
 				"discount_percentage": discount_pct,
 				"discount_amount": item_discount,
@@ -407,7 +408,7 @@ class TimeBasedHandler(BasePromotionHandler):
 			total_discount += item_discount
 
 			item.setdefault("promotion_discounts", []).append({
-				"promotion": promo.get("name"),
+				"promotion_id": promo.get("name"),
 				"promotion_type": "time_based",
 				"discount_percentage": discount_pct,
 				"discount_amount": item_discount,
@@ -477,7 +478,7 @@ class InvoiceDiscountHandler(BasePromotionHandler):
 
 			if item_share > 0:
 				item.setdefault("promotion_discounts", []).append({
-					"promotion": promo.get("name"),
+					"promotion_id": promo.get("name"),
 					"promotion_type": "invoice_discount",
 					"discount_percentage": discount_pct,
 					"discount_amount": item_share,
