@@ -546,8 +546,15 @@ class CashbackHandler(BasePromotionHandler):
 		final_total = self._get_final_total(invoice)
 		cashback = flt(final_total * pct / 100, 2)
 
-		if (max_cap > 0 and cashback > max_cap):
-			cashback = max_cap
+		# GLOBAL CAP: Ensure total discount (Standard + Promo) doesn't exceed max_cap
+		if max_cap > 0:
+			existing_total_discount = sum(flt(item.get("discount_amount", 0)) for item in invoice.get("items", []))
+			allowed_room = max(0, max_cap - existing_total_discount)
+			if cashback > allowed_room:
+				cashback = allowed_room
+
+		if cashback <= 0:
+			return PromotionResult(promo, success=False, message=_("Maximum total discount reached"))
 
 		# Distribute cashback proportionally across all items (as a discount)
 		affected = []
