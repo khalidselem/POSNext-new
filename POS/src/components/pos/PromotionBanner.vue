@@ -71,6 +71,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { usePOSPromotionsStore } from '@/stores/posPromotions'
+import { useBootstrapStore } from '@/stores/bootstrap'
 
 const promotionsStore = usePOSPromotionsStore()
 const expanded = ref(false)
@@ -87,9 +88,13 @@ const totalCashback = computed(() => promotionsStore.totalCashback)
 const showBanner = computed(() => activeCount.value > 0 || hasApplied.value || isEvaluating.value)
 
 function formatCurrency(value) {
+	// Dynamically get currency from bootstrap store or default to SAR
+	const bootstrapStore = useBootstrapStore()
+	const currency = bootstrapStore.getPreloadedPOSProfile()?.currency || 'SAR'
+	
 	return new Intl.NumberFormat(undefined, {
 		style: 'currency',
-		currency: 'SAR',
+		currency: currency,
 		minimumFractionDigits: 2,
 	}).format(value)
 }
