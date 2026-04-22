@@ -1579,11 +1579,14 @@ export const usePOSCartStore = defineStore("posCart", () => {
 									}
 								}
 							}
-							// Fallback: distribute evenly if no per-item data
+							// Fallback: distribute evenly if no per-item data or metadata is missing
 							if (Object.keys(promoDiscountMap).length === 0) {
-								const perItem = result.discount_amount / affectedItems.length
-								for (const code of affectedItems) {
-									promoDiscountMap[code] = (promoDiscountMap[code] || 0) + perItem
+								const targets = affectedItems.length > 0 ? affectedItems : invoiceItems.value.map(i => i.item_code)
+								if (targets.length > 0) {
+									const perItem = result.discount_amount / targets.length
+									for (const code of targets) {
+										promoDiscountMap[code] = (promoDiscountMap[code] || 0) + perItem
+									}
 								}
 							}
 						}

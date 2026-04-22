@@ -528,10 +528,34 @@ class CashbackHandler(BasePromotionHandler):
 		if (max_cap > 0 and cashback > max_cap):
 			cashback = max_cap
 
+		# Distribute cashback proportionally across all items (as a discount)
+		affected = []
+		for item in invoice.get("items", []):
+			rate = flt(item.get("rate", 0))
+			qty = flt(item.get("qty", 0))
+			item_total = rate * qty
+			for pd in item.get("promotion_discounts", []):
+				item_total -= flt(pd.get("discount_amount", 0))
+			
+			item_total = max(item_total, 0)
+			if final_total > 0:
+				item_share = flt(item_total / final_total * cashback, 2)
+			else:
+				item_share = 0
+			
+			if item_share > 0:
+				item.setdefault("promotion_discounts", []).append({
+					"promotion_id": promo.get("name"),
+					"promotion_type": "cashback",
+					"discount_amount": item_share,
+				})
+				affected.append(item.get("item_code"))
+
 		return PromotionResult(
 			promo, success=True,
 			discount_amount=cashback,   # Reduces Grand Total
 			cashback_amount=cashback,   # Maintains "Cashback" label in UI
+			affected_items=affected,
 			message=_("Cashback {0}% = {1} (threshold: {2})").format(pct, cashback, threshold)
 		)
 
