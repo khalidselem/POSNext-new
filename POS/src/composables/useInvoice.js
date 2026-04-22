@@ -673,12 +673,24 @@ export function useInvoice() {
 				(baseAmount * item.discount_percentage) / 100,
 			)
 		} else if (item.discount_amount > 0) {
-			discountAmount = roundCurrency(item.discount_amount)
-			// Sync percentage when amount is provided directly
-			item.discount_percentage =
-				baseAmount > 0 ? (discountAmount / baseAmount) * 100 : 0
+			// If we have a manual amount, we must subtract the promo portion 
+			// to avoid double-counting it during the final addition below
+			const promoPortion = item._promo_discount || 0
+			discountAmount = roundCurrency(Math.max(0, item.discount_amount - promoPortion))
 		}
+
+		// ADDITIVE POS PROMOTIONS:
+		// We add the promotion portion on top of the standard discount (from percentage or manual)
+		if (item._promo_discount > 0) {
+			discountAmount = roundCurrency(discountAmount + item._promo_discount)
+		}
+
 		item.discount_amount = discountAmount
+		
+		// If we only have promo discount, sync percentage for UI visibility
+		if (item.discount_percentage === 0 && discountAmount > 0 && baseAmount > 0) {
+			item.discount_percentage = (discountAmount / baseAmount) * 100
+		}
 
 		// Calculate tax based on inclusive/exclusive mode
 		// Use currency precision for all monetary calculations to match ERPNext

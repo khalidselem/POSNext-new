@@ -1598,20 +1598,9 @@ export const usePOSCartStore = defineStore("posCart", () => {
 						const newPromoDiscount = promoDiscountMap[item.item_code] || 0
 						const oldPromoDiscount = item._promo_discount || 0
 
-						if (newPromoDiscount !== oldPromoDiscount || newPromoDiscount > 0) {
-							// To be additive and avoid recalculation conflicts:
-							// 1. Subtract the old promotion portion from the total discount_amount
-							// 2. Add the new promotion portion
-							// 3. Set percentage to 0 to force recalculateItem to use the new amount
-							
-							const currentTotalDiscount = item.discount_amount || 0
-							item.discount_amount = Math.max(0, currentTotalDiscount - oldPromoDiscount + newPromoDiscount)
+						if (newPromoDiscount !== oldPromoDiscount) {
+							// recalculateItem is now natively additive and uses _promo_discount
 							item._promo_discount = newPromoDiscount
-							
-							// We must zero out percentage because recalculateItem prioritizes it over amount
-							// It will be re-synced from the new amount during recalculateItem()
-							item.discount_percentage = 0 
-							
 							recalculateItem(item)
 							anyChanged = true
 						}
