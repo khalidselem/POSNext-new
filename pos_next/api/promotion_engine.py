@@ -341,28 +341,43 @@ class TimeBasedHandler(BasePromotionHandler):
 	- Can be overridden ±10 minutes by authorized roles
 	"""
 
+	def get_time_field(self, config, field):
+		from datetime import datetime, timedelta
+		val = config.get(field)
+		if not val:
+			return None
+		
+		# Handle string (e.g. from manual JSON or certain API calls)
+		if isinstance(val, str):
+			try:
+				return datetime.strptime(val, "%H:%M:%S").time()
+			except ValueError:
+				# Handle "HH:MM"
+				try:
+					return datetime.strptime(val, "%H:%M").time()
+				except ValueError:
+					return None
+				
+		# Handle timedelta (standard Frappe SQL/Database format)
+		if isinstance(val, timedelta):
+			return (datetime.min + val).time()
+			
+		return val
+
 	def is_eligible(self, invoice, promo):
 		config = promo.get("config", {})
 		discount_pct = flt(config.get("discount_percentage", 0))
 		if discount_pct <= 0:
 			return False
 
-		start_time = config.get("start_time")
-		end_time = config.get("end_time")
+		start_time = self.get_time_field(config, "start_time")
+		end_time = self.get_time_field(config, "end_time")
 
 		if not start_time or not end_time:
 			return True  # No time restriction = always active
 
 		now = now_datetime()
 		current_time = now.time()
-
-		from datetime import time as dt_time
-		if isinstance(start_time, str):
-			parts = start_time.split(":")
-			start_time = dt_time(int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 0)
-		if isinstance(end_time, str):
-			parts = end_time.split(":")
-			end_time = dt_time(int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 0)
 
 		# Check if within window
 		if start_time <= current_time <= end_time:
@@ -404,7 +419,13 @@ class TimeBasedHandler(BasePromotionHandler):
 		for item in eligible_items:
 			rate = flt(item.get("rate", 0))
 			qty = flt(item.get("qty", 0))
-			item_discount = flt(rate * qty * discount_pct / 100, 2)
+			
+			# Additive logic: subtract previous promotion discounts first
+			item_total = rate * qty
+			for pd in item.get("promotion_discounts", []):
+				item_total -= flt(pd.get("discount_amount", 0))
+			
+			item_discount = flt(max(item_total, 0) * discount_pct / 100, 2)
 			total_discount += item_discount
 
 			item.setdefault("promotion_discounts", []).append({
