@@ -31,7 +31,7 @@ def create_demo_promotions():
 			"start_date": start,
 			"end_date": end,
 			"rules": [
-				{"buy_qty": 2, "get_qty": 1}
+				{"buy_qty": 2, "free_qty": 1}
 			],
 			"promotion_items": []
 		},
@@ -58,7 +58,7 @@ def create_demo_promotions():
 			"end_date": end,
 			"rules": [
 				{
-					"min_spend_threshold": 500,
+					"cashback_threshold": 500,
 					"cashback_percentage": 5,
 					"cashback_max_cap": 100
 				}
@@ -81,7 +81,7 @@ def create_demo_promotions():
 			"promotion_items": []
 		},
 		{
-			"promotion_name": "📦 Bundle Deal — Any 3 for 20% Off",
+			"promotion_name": "📦 Bundle Deal — Any 3 for SAR 99",
 			"promotion_type": "fixed_bundle",
 			"enabled": 1,
 			"stackable": 0,
@@ -89,12 +89,12 @@ def create_demo_promotions():
 			"start_date": start,
 			"end_date": end,
 			"rules": [
-				{"bundle_qty": 3, "discount_percentage": 20}
+				{"bundle_qty": 3, "bundle_fixed_price": 99}
 			],
 			"promotion_items": []
 		},
 		{
-			"promotion_name": "🏷️ Category Discount — 25% Max per Category",
+			"promotion_name": "🏷️ Category Discount — 25% Off",
 			"promotion_type": "category_discount",
 			"enabled": 1,
 			"stackable": 1,
@@ -102,7 +102,7 @@ def create_demo_promotions():
 			"start_date": start,
 			"end_date": end,
 			"rules": [
-				{"discount_percentage": 25, "max_category_discount": 25}
+				{"discount_percentage": 25, "max_categories": 3}
 			],
 			"promotion_items": []
 		}
