@@ -1557,7 +1557,76 @@ export const usePOSCartStore = defineStore("posCart", () => {
 		if (invoiceItems.value.length > 0 && !signal?.aborted) {
 			try {
 				const invoiceData = promotionsStore.buildInvoiceData(invoiceItems.value)
-				await promotionsStore.evaluatePromotions(invoiceData)
+				const evaluation = await promotionsStore.evaluatePromotions(invoiceData)
+
+				// Apply engine results back to cart items
+				if (evaluation && evaluation.applied && evaluation.applied.length > 0) {
+					// Build discount map: item_code → total discount amount from promotions
+					const promoDiscountMap = {}
+					for (const result of evaluation.applied) {
+						if (!result.success) continue
+						// Each result has affected_items array and discount_amount
+						const affectedItems = result.affected_items || []
+						if (affectedItems.length > 0 && result.discount_amount > 0) {
+							// Check if the engine provided per-item discounts in the invoice
+							const engineItems = evaluation.invoice?.items || []
+							for (const engineItem of engineItems) {
+								const code = engineItem.item_code
+								const promoDiscounts = engineItem.promotion_discounts || []
+								for (const pd of promoDiscounts) {
+									if (pd.promotion === result.promotion_name || affectedItems.includes(code)) {
+										promoDiscountMap[code] = (promoDiscountMap[code] || 0) + (pd.discount_amount || 0)
+									}
+								}
+							}
+							// Fallback: distribute evenly if no per-item data
+							if (Object.keys(promoDiscountMap).length === 0) {
+								const perItem = result.discount_amount / affectedItems.length
+								for (const code of affectedItems) {
+									promoDiscountMap[code] = (promoDiscountMap[code] || 0) + perItem
+								}
+							}
+						}
+					}
+
+					// Apply discounts to actual cart items
+					let anyChanged = false
+					for (const item of invoiceItems.value) {
+						const promoDiscount = promoDiscountMap[item.item_code]
+						if (promoDiscount && promoDiscount > 0) {
+							// Only apply if not already discounted by pricing rules
+							const hasExistingDiscount = (item.discount_percentage > 0 || item.discount_amount > 0)
+								&& item.pricing_rules && item.pricing_rules.length > 0
+
+							if (!hasExistingDiscount) {
+								item.discount_amount = promoDiscount
+								item.discount_percentage = 0 // Let recalculate compute from amount
+								item._promotion_applied = true
+								recalculateItem(item)
+								anyChanged = true
+							}
+						}
+					}
+
+					if (anyChanged) {
+						rebuildIncrementalCache()
+					}
+				} else {
+					// No promotions applied — clear any previously applied promotion discounts
+					let anyCleared = false
+					for (const item of invoiceItems.value) {
+						if (item._promotion_applied) {
+							item.discount_amount = 0
+							item.discount_percentage = 0
+							item._promotion_applied = false
+							recalculateItem(item)
+							anyCleared = true
+						}
+					}
+					if (anyCleared) {
+						rebuildIncrementalCache()
+					}
+				}
 			} catch (promoError) {
 				// Non-fatal: promotion engine failure shouldn't block the sale
 				console.warn("POS Promotion engine evaluation failed (non-fatal):", promoError)
