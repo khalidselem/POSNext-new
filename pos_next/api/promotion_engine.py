@@ -242,13 +242,17 @@ class BuyXGetYHandler(BasePromotionHandler):
 		return total_qty >= group_size
 
 	def apply(self, invoice, promo):
-		print("[Promotion Engine] Evaluating Buy X Get Y: {0}".format(promo.get("name")))
 		config = promo.get("config", {})
 		buy_qty = cint(config.get("buy_qty", 0))
 		free_qty = cint(config.get("free_qty", 0))
 		group_size = buy_qty + free_qty
 
 		eligible_items = self._get_eligible_items(invoice, promo)
+
+		frappe.log_error(
+			title=f"Promo Debug: {promo.get('name')}",
+			message=f"buy_qty: {buy_qty}, free_qty: {free_qty}, group_size: {group_size}\nEligible Items: {eligible_items}\nInvoice: {invoice.get('items')}"
+		)
 
 		# Expand items by qty into individual units with their price
 		units = []
@@ -279,7 +283,7 @@ class BuyXGetYHandler(BasePromotionHandler):
 			discount_per_item.setdefault(code, 0)
 			discount_per_item[code] += u["rate"]
 
-		print("[Promotion Engine] Calculated Free Units: {0}, Total Discount: {1}".format(len(free_units), total_discount))
+		frappe.log_error(title="Promo Debug: Free Units", message=f"free_units: {free_units}, discount_per_item: {discount_per_item}")
 
 		# Apply to original items
 		affected = []
