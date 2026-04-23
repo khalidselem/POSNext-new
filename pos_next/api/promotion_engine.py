@@ -204,7 +204,7 @@ class FixedBundleHandler(BasePromotionHandler):
 
 		for item in eligible_items:
 			qty = flt(item.get("qty", 0))
-			for _ in range(int(qty)):
+			for i in range(int(qty)):
 				item_discount = per_item_discount
 				item.setdefault("promotion_discounts", []).append({
 					"promotion_id": promo.get("name"),
@@ -261,7 +261,7 @@ class BuyXGetYHandler(BasePromotionHandler):
 		for item in eligible_items:
 			rate = flt(item.get("rate", 0))
 			qty = int(flt(item.get("qty", 0)))
-			for _ in range(qty):
+			for i in range(qty):
 				units.append({"item_code": item.get("item_code"), "rate": rate, "item_ref": item})
 
 		total_units = len(units)
