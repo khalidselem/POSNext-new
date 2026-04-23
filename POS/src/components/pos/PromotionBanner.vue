@@ -33,8 +33,18 @@
 							<span v-if="totalDiscount > 0" class="savings-badge">
 								{{ __("Save {0}", [formatCurrency(totalDiscount)]) }}
 							</span>
-							<span v-if="totalCashback > 0" class="cashback-badge">
+							<!-- Cashback Badge - Cap-aware display -->
+							<span v-if="totalCashback > 0 && !cashbackDetail.capApplied" class="cashback-badge">
 								{{ __("Cashback {0}", [formatCurrency(totalCashback)]) }}
+							</span>
+							<!-- Cashback Badge with Cap Warning -->
+							<span v-if="totalCashback > 0 && cashbackDetail.capApplied" class="cashback-badge-capped"
+								:title="__('Maximum cashback cap reached ({0})', [formatCurrency(cashbackDetail.cap)])">
+								{{ __("Cashback {0}", [formatCurrency(totalCashback)]) }}
+							</span>
+							<span v-if="cashbackDetail.capApplied" class="cap-badge"
+								:title="__('Maximum cashback cap reached ({0})', [formatCurrency(cashbackDetail.cap)])">
+								{{ __("Cap Applied") }}
 							</span>
 						</div>
 					</div>
@@ -42,6 +52,15 @@
 					<div class="applied-names">
 						<span v-for="promo in appliedPromotions" :key="promo.promotion_name" class="promo-pill">
 							{{ promo.promotion_name }}
+						</span>
+					</div>
+					<!-- Cashback Cap Detail Line -->
+					<div v-if="cashbackDetail.capApplied && totalCashback > 0" class="cashback-cap-detail">
+						<svg class="w-3 h-3 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+						</svg>
+						<span class="cashback-cap-text">
+							{{ __("Cashback Applied: {0} (Capped from {1})", [formatCurrency(totalCashback), formatCurrency(cashbackDetail.rawAmount)]) }}
 						</span>
 					</div>
 				</div>
@@ -84,6 +103,7 @@ const hasApplied = computed(() => promotionsStore.hasAppliedPromotions)
 const isEvaluating = computed(() => promotionsStore.isEvaluating)
 const totalDiscount = computed(() => promotionsStore.totalDiscount)
 const totalCashback = computed(() => promotionsStore.totalCashback)
+const cashbackDetail = computed(() => promotionsStore.cashbackDetail)
 
 const showBanner = computed(() => activeCount.value > 0 || hasApplied.value || isEvaluating.value)
 
@@ -194,6 +214,56 @@ function typeColor(type) {
 	font-size: 0.6875rem;
 	font-weight: 700;
 	color: #1d4ed8;
+}
+
+.cashback-badge-capped {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.125rem 0.5rem;
+	background: #fff7ed;
+	border: 1px solid #fdba74;
+	border-radius: 9999px;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	color: #c2410c;
+}
+
+.cap-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.0625rem 0.375rem;
+	background: #fff7ed;
+	border: 1px solid #fb923c;
+	border-radius: 9999px;
+	font-size: 0.5625rem;
+	font-weight: 700;
+	color: #ea580c;
+	text-transform: uppercase;
+	letter-spacing: 0.025em;
+	animation: capPulse 2s ease-in-out infinite;
+}
+
+@keyframes capPulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.7; }
+}
+
+.cashback-cap-detail {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	margin-top: 0.375rem;
+	padding: 0.25rem 0.5rem;
+	background: #fff7ed;
+	border: 1px solid #fed7aa;
+	border-radius: 0.375rem;
+	font-size: 0.625rem;
+	color: #9a3412;
+	font-weight: 600;
+}
+
+.cashback-cap-text {
+	flex: 1;
 }
 
 .applied-names {

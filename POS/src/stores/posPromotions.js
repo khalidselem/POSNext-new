@@ -30,6 +30,12 @@ export const usePOSPromotionsStore = defineStore("posPromotions", () => {
 	const totalDiscount = ref(0)
 	const totalCashback = ref(0)
 
+	// Cashback detail — for transparent cap display in POS UI
+	const rawCashback = ref(0)           // Pre-cap cashback calculation
+	const cashbackCap = ref(0)           // Configured max cap (0 = no cap)
+	const cashbackCapApplied = ref(false) // Whether cap was triggered
+	const cashbackPercentage = ref(0)    // For "Cashback (5%)" display
+
 	// ==========================================================================
 	// Computed
 	// ==========================================================================
@@ -42,6 +48,15 @@ export const usePOSPromotionsStore = defineStore("posPromotions", () => {
 		appliedCount: appliedPromotions.value.length,
 		totalDiscount: totalDiscount.value,
 		totalCashback: totalCashback.value,
+	}))
+
+	// Computed cashback detail object for UI components
+	const cashbackDetail = computed(() => ({
+		rawAmount: rawCashback.value,
+		appliedAmount: totalCashback.value,
+		cap: cashbackCap.value,
+		capApplied: cashbackCapApplied.value,
+		percentage: cashbackPercentage.value,
 	}))
 
 	// ==========================================================================
@@ -94,6 +109,12 @@ export const usePOSPromotionsStore = defineStore("posPromotions", () => {
 			appliedPromotions.value = evaluation.applied || []
 			totalDiscount.value = evaluation.total_discount || 0
 			totalCashback.value = evaluation.total_cashback || 0
+
+			// Extract cashback cap metadata for transparent UI display
+			rawCashback.value = evaluation.raw_cashback || 0
+			cashbackCap.value = evaluation.cashback_cap || 0
+			cashbackCapApplied.value = evaluation.cashback_cap_applied || false
+			cashbackPercentage.value = evaluation.cashback_percentage || 0
 
 			log.info(
 				`Promotion evaluation: ${evaluation.promotions_count || 0} applied,` +
@@ -168,6 +189,11 @@ export const usePOSPromotionsStore = defineStore("posPromotions", () => {
 		lastEvaluation.value = null
 		totalDiscount.value = 0
 		totalCashback.value = 0
+		// Reset cashback detail state
+		rawCashback.value = 0
+		cashbackCap.value = 0
+		cashbackCapApplied.value = false
+		cashbackPercentage.value = 0
 	}
 
 	/**
@@ -188,12 +214,18 @@ export const usePOSPromotionsStore = defineStore("posPromotions", () => {
 		hasFetched,
 		totalDiscount,
 		totalCashback,
+		// Cashback detail state
+		rawCashback,
+		cashbackCap,
+		cashbackCapApplied,
+		cashbackPercentage,
 
 		// Computed
 		appliedCount,
 		hasAppliedPromotions,
 		hasActivePromotions,
 		promotionSummary,
+		cashbackDetail,
 
 		// Actions
 		fetchActivePromotions,

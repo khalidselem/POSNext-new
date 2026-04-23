@@ -80,16 +80,23 @@ class PromotionResult:
 	"""Result of applying a single promotion."""
 
 	def __init__(self, promotion, success=False, discount_amount=0,
-				 cashback_amount=0, affected_items=None, message=""):
+				 cashback_amount=0, affected_items=None, message="",
+				 raw_cashback=0, cashback_cap=0, cap_applied=False,
+				 cashback_percentage=0):
 		self.promotion = promotion
 		self.success = success
 		self.discount_amount = flt(discount_amount, 2)
 		self.cashback_amount = flt(cashback_amount, 2)
 		self.affected_items = affected_items or []
 		self.message = message
+		# Cashback-specific metadata for transparent UI display
+		self.raw_cashback = flt(raw_cashback, 2)
+		self.cashback_cap = flt(cashback_cap, 2)
+		self.cap_applied = cap_applied
+		self.cashback_percentage = flt(cashback_percentage, 2)
 
 	def to_dict(self):
-		return {
+		result = {
 			"promotion_id": self.promotion.get("name", ""),
 			"promotion_name": self.promotion.get("promotion_name", ""),
 			"promotion_type": self.promotion.get("promotion_type", ""),
@@ -99,6 +106,15 @@ class PromotionResult:
 			"affected_items": self.affected_items,
 			"message": self.message,
 		}
+		# Include cashback metadata only for cashback promotions
+		if self.promotion.get("promotion_type") == "cashback":
+			result.update({
+				"raw_cashback": self.raw_cashback,
+				"cashback_cap": self.cashback_cap,
+				"cap_applied": self.cap_applied,
+				"cashback_percentage": self.cashback_percentage,
+			})
+		return result
 
 
 # =============================================================================
@@ -544,17 +560,18 @@ class CashbackHandler(BasePromotionHandler):
 		max_cap = flt(config.get("cashback_max_cap", 0))
 
 		final_total = self._get_final_total(invoice)
-		cashback = flt(final_total * pct / 100, 2)
+		raw_cashback = flt(final_total * pct / 100, 2)
 
-		# GLOBAL CAP: Ensure total discount (Standard + Promo) doesn't exceed max_cap
-		if max_cap > 0:
-			existing_total_discount = sum(flt(item.get("discount_amount", 0)) for item in invoice.get("items", []))
-			allowed_room = max(0, max_cap - existing_total_discount)
-			if cashback > allowed_room:
-				cashback = allowed_room
+		# CASHBACK CAP: Applied Cashback = MIN(Calculated Cashback, Cap)
+		# This is a direct cap on the cashback amount itself — NOT a global discount cap.
+		cashback = raw_cashback
+		cap_applied = False
+		if max_cap > 0 and cashback > max_cap:
+			cashback = flt(max_cap, 2)
+			cap_applied = True
 
 		if cashback <= 0:
-			return PromotionResult(promo, success=False, message=_("Maximum total discount reached"))
+			return PromotionResult(promo, success=False, message=_("Cashback amount is zero"))
 
 		# Distribute cashback proportionally across all items (as a discount)
 		affected = []
@@ -579,12 +596,25 @@ class CashbackHandler(BasePromotionHandler):
 				})
 				affected.append(item.get("item_code"))
 
+		# Build descriptive message
+		if cap_applied:
+			msg = _("Cashback {0}% = {1} (capped from {2}, threshold: {3})").format(
+				pct, cashback, raw_cashback, threshold
+			)
+		else:
+			msg = _("Cashback {0}% = {1} (threshold: {2})").format(pct, cashback, threshold)
+
 		return PromotionResult(
 			promo, success=True,
-			discount_amount=cashback,   # Reduces Grand Total
-			cashback_amount=cashback,   # Maintains "Cashback" label in UI
+			discount_amount=cashback,       # Reduces Grand Total
+			cashback_amount=cashback,       # Applied cashback (post-cap)
 			affected_items=affected,
-			message=_("Cashback {0}% = {1} (threshold: {2})").format(pct, cashback, threshold)
+			message=msg,
+			# Cashback transparency metadata
+			raw_cashback=raw_cashback,      # Pre-cap calculation
+			cashback_cap=max_cap,           # The configured cap (0 = no cap)
+			cap_applied=cap_applied,        # True if cap was hit
+			cashback_percentage=pct,        # For "Cashback (5%)" display
 		)
 
 	def _get_final_total(self, invoice):
@@ -718,12 +748,24 @@ class PromotionEngine:
 		total_discount = sum(r.discount_amount for r in applied_results)
 		total_cashback = sum(r.cashback_amount for r in applied_results)
 
+		# Extract cashback-specific metadata from cashback results
+		cashback_results = [r for r in applied_results if r.promotion.get("promotion_type") == "cashback"]
+		raw_cashback = sum(r.raw_cashback for r in cashback_results)
+		cashback_cap = max((r.cashback_cap for r in cashback_results), default=0)
+		cashback_cap_applied = any(r.cap_applied for r in cashback_results)
+		cashback_percentage = max((r.cashback_percentage for r in cashback_results), default=0)
+
 		return {
 			"invoice": invoice,
 			"applied": [r.to_dict() for r in applied_results],
 			"total_discount": flt(total_discount, 2),
 			"total_cashback": flt(total_cashback, 2),
 			"promotions_count": len(applied_results),
+			# Cashback transparency — allows POS UI to show raw vs. capped values
+			"raw_cashback": flt(raw_cashback, 2),
+			"cashback_cap": flt(cashback_cap, 2),
+			"cashback_cap_applied": cashback_cap_applied,
+			"cashback_percentage": flt(cashback_percentage, 2),
 		}
 
 	def _get_active_promotions(self, branch=None):

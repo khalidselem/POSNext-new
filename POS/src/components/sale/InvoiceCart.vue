@@ -1141,6 +1141,54 @@
 					}}</span>
 				</div>
 
+				<!-- Cashback Display - Highlighted Green (between Discount and Tax) -->
+				<div
+					v-if="cashbackDetail.appliedAmount > 0"
+					class="flex items-center justify-between mb-0.5 bg-emerald-50 rounded px-1.5 py-1 -mx-0.5"
+				>
+					<div class="flex items-center gap-1 flex-wrap">
+						<svg
+							class="w-3.5 h-3.5 text-emerald-600 flex-shrink-0"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+							/>
+						</svg>
+						<span class="text-xs font-bold text-emerald-700">
+							{{ cashbackDetail.percentage > 0
+								? __('Cashback ({0}%)', [cashbackDetail.percentage])
+								: __('Cashback')
+							}}
+						</span>
+						<!-- Cap Applied Badge -->
+						<span
+							v-if="cashbackDetail.capApplied"
+							class="inline-flex items-center px-1 py-0.5 bg-orange-100 border border-orange-300 rounded text-[9px] font-bold text-orange-700 flex-shrink-0"
+							:title="__('Maximum cashback cap reached ({0})', [formatCurrency(cashbackDetail.cap)])"
+						>
+							{{ __('Cap Applied') }}
+						</span>
+					</div>
+					<div class="text-end flex-shrink-0">
+						<span class="text-sm font-extrabold text-emerald-600 min-w-[60px]">
+							+{{ formatCurrency(cashbackDetail.appliedAmount) }}
+						</span>
+						<!-- Show raw (pre-cap) amount with strikethrough when capped -->
+						<div
+							v-if="cashbackDetail.capApplied"
+							class="text-[9px] text-gray-400 line-through"
+						>
+							{{ formatCurrency(cashbackDetail.rawAmount) }}
+						</div>
+					</div>
+				</div>
+
 				<div class="flex items-center justify-between text-xs text-gray-600">
 					<div class="flex items-center gap-1">
 						<svg
@@ -1256,6 +1304,7 @@
 import { usePOSCartStore } from "@/stores/posCart";
 import { usePOSSettingsStore } from "@/stores/posSettings";
 import { usePOSOffersStore } from "@/stores/posOffers";
+import { usePOSPromotionsStore } from "@/stores/posPromotions";
 import { useCustomerSearchStore } from "@/stores/customerSearch";
 import { DEFAULT_CURRENCY, formatCurrency as formatCurrencyUtil } from "@/utils/currency";
 import { useFormatters } from "@/composables/useFormatters";
@@ -1278,6 +1327,7 @@ import EditItemDialog from "./EditItemDialog.vue";
 const cartStore = usePOSCartStore(); // Pinia store for cart state management
 const settingsStore = usePOSSettingsStore(); // Pinia store for POS settings
 const offersStore = usePOSOffersStore(); // Pinia store for offers/promotions
+const promotionsStore = usePOSPromotionsStore(); // Pinia store for promotion engine (cashback)
 const customerSearchStore = useCustomerSearchStore(); // Pinia store for customer search
 const { formatQuantity } = useFormatters(); // Quantity formatting utilities
 
@@ -1478,6 +1528,14 @@ watch(
  * @returns {Number} Count of applied offers
  */
 const appliedOfferCount = computed(() => (props.appliedOffers || []).length);
+
+/**
+ * Cashback detail from promotion engine.
+ * Provides raw (pre-cap), applied (post-cap), percentage, cap value,
+ * and whether the cap was triggered — for transparent display to the cashier.
+ * @returns {Object} { rawAmount, appliedAmount, cap, capApplied, percentage }
+ */
+const cashbackDetail = computed(() => promotionsStore.cashbackDetail);
 
 /**
  * Pre-computed customer lookup map for O(1) access by ID.
