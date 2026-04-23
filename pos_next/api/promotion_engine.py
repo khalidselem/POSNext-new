@@ -719,7 +719,7 @@ class PromotionEngine:
 		"category_discount": CategoryDiscountHandler(),
 	}
 
-	def evaluate(self, invoice_data, branch=None, preview=False):
+	def evaluate(self, invoice_data, branch=None, pos_profile=None, preview=False):
 		"""
 		Main entry point: evaluate all active promotions against an invoice.
 
@@ -727,6 +727,7 @@ class PromotionEngine:
 			invoice_data: dict with 'items' list, each item having
 						  item_code, rate, qty, item_group, brand
 			branch: optional branch filter
+			pos_profile: optional pos profile to filter promotions
 			preview: if True, don't persist any changes
 
 		Returns:
@@ -737,7 +738,7 @@ class PromotionEngine:
 		print("[Promotion Engine] Evaluating invoice with {0} items for branch: {1}".format(len(invoice.get("items", [])), branch))
 
 		# Fetch active promotions
-		promotions = self._get_active_promotions(branch)
+		promotions = self._get_active_promotions(branch=branch, pos_profile=pos_profile)
 
 		# Sort by phase then priority
 		promotions.sort(key=lambda p: (
@@ -791,7 +792,7 @@ class PromotionEngine:
 			"cashback_percentage": flt(cashback_percentage, 2),
 		}
 
-	def _get_active_promotions(self, branch=None):
+	def _get_active_promotions(self, branch=None, pos_profile=None):
 		"""Fetch all active POS Promotions from database."""
 		if not frappe.db.table_exists("POS Promotion"):
 			return []
@@ -799,6 +800,20 @@ class PromotionEngine:
 		filters = {
 			"enabled": 1,
 		}
+
+		# Handle POS Profile Specific Promotions
+		allowed_promos = []
+		if pos_profile:
+			pos_settings = frappe.db.exists("POS Settings", {"pos_profile": pos_profile})
+			if pos_settings:
+				ps = frappe.get_doc("POS Settings", pos_settings)
+				if not ps.enable_promotions:
+					return []
+				allowed_promos = [row.promotion for row in ps.promotions if row.enabled and row.promotion]
+				if allowed_promos:
+					filters["name"] = ["in", allowed_promos]
+				else:
+					return [] # If enabled but table is empty, don't apply anything
 
 		today = nowdate()
 
@@ -864,13 +879,14 @@ class PromotionEngine:
 # =============================================================================
 
 @frappe.whitelist()
-def evaluate_promotions(invoice_data, branch=None):
+def evaluate_promotions(invoice_data, branch=None, pos_profile=None):
 	"""
 	Evaluate all active promotions for an invoice.
 
 	Args:
 		invoice_data: JSON string or dict with invoice items
 		branch: optional branch name
+		pos_profile: optional pos profile to filter promotions
 
 	Returns:
 		dict with applied promotions and calculated discounts
@@ -878,8 +894,15 @@ def evaluate_promotions(invoice_data, branch=None):
 	if isinstance(invoice_data, str):
 		invoice_data = json.loads(invoice_data)
 
+	if not pos_profile and frappe.session.user:
+		pos_profile = frappe.db.get_value("POS Opening Entry", {
+			"user": frappe.session.user,
+			"status": "Open",
+			"docstatus": 1
+		}, "pos_profile")
+
 	engine = PromotionEngine()
-	result = engine.evaluate(invoice_data, branch=branch)
+	result = engine.evaluate(invoice_data, branch=branch, pos_profile=pos_profile)
 	
 	frappe.log_error(title="Promo Debug: API Final Result", message=frappe.as_json(result))
 	
@@ -887,7 +910,7 @@ def evaluate_promotions(invoice_data, branch=None):
 
 
 @frappe.whitelist()
-def preview_promotions(invoice_data, branch=None):
+def preview_promotions(invoice_data, branch=None, pos_profile=None):
 	"""
 	Preview promotion effects without persisting.
 	Same as evaluate but explicitly marked as preview.
@@ -895,8 +918,15 @@ def preview_promotions(invoice_data, branch=None):
 	if isinstance(invoice_data, str):
 		invoice_data = json.loads(invoice_data)
 
+	if not pos_profile and frappe.session.user:
+		pos_profile = frappe.db.get_value("POS Opening Entry", {
+			"user": frappe.session.user,
+			"status": "Open",
+			"docstatus": 1
+		}, "pos_profile")
+
 	engine = PromotionEngine()
-	return engine.evaluate(invoice_data, branch=branch, preview=True)
+	return engine.evaluate(invoice_data, branch=branch, pos_profile=pos_profile, preview=True)
 
 
 @frappe.whitelist()
