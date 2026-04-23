@@ -250,8 +250,10 @@ class BuyXGetYHandler(BasePromotionHandler):
 		eligible_items = self._get_eligible_items(invoice, promo)
 
 		frappe.log_error(
-			title=f"Promo Debug: {promo.get('name')}",
-			message=f"buy_qty: {buy_qty}, free_qty: {free_qty}, group_size: {group_size}\nEligible Items: {eligible_items}\nInvoice: {invoice.get('items')}"
+			title="Promo Debug: {0}".format(promo.get('name')),
+			message="buy_qty: {0}, free_qty: {1}, group_size: {2}\nEligible Items: {3}\nInvoice: {4}".format(
+				buy_qty, free_qty, group_size, eligible_items, invoice.get('items')
+			)
 		)
 
 		# Expand items by qty into individual units with their price
@@ -283,7 +285,7 @@ class BuyXGetYHandler(BasePromotionHandler):
 			discount_per_item.setdefault(code, 0)
 			discount_per_item[code] += u["rate"]
 
-		frappe.log_error(title="Promo Debug: Free Units", message=f"free_units: {free_units}, discount_per_item: {discount_per_item}")
+		frappe.log_error(title="Promo Debug: Free Units", message="free_units: {0}, discount_per_item: {1}".format(free_units, discount_per_item))
 
 		# Apply to original items
 		affected = []
@@ -877,7 +879,11 @@ def evaluate_promotions(invoice_data, branch=None):
 		invoice_data = json.loads(invoice_data)
 
 	engine = PromotionEngine()
-	return engine.evaluate(invoice_data, branch=branch)
+	result = engine.evaluate(invoice_data, branch=branch)
+	
+	frappe.log_error(title="Promo Debug: API Final Result", message=frappe.as_json(result))
+	
+	return result
 
 
 @frappe.whitelist()
