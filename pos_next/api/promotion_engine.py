@@ -134,7 +134,10 @@ class BasePromotionHandler:
 
 	def _get_eligible_items(self, invoice, promo):
 		"""Get items matching the promotion's item/group/brand filters."""
-		rules = promo.get("rules", [])
+		raw_rules = promo.get("rules", [])
+		# Filter out empty rows that users might accidentally add
+		rules = [r for r in raw_rules if r.get("item_code") or r.get("item_group") or r.get("brand")]
+
 		if not rules:
 			return invoice.get("items", [])
 
@@ -239,6 +242,7 @@ class BuyXGetYHandler(BasePromotionHandler):
 		return total_qty >= group_size
 
 	def apply(self, invoice, promo):
+		print("[Promotion Engine] Evaluating Buy X Get Y: {0}".format(promo.get("name")))
 		config = promo.get("config", {})
 		buy_qty = cint(config.get("buy_qty", 0))
 		free_qty = cint(config.get("free_qty", 0))
@@ -275,17 +279,29 @@ class BuyXGetYHandler(BasePromotionHandler):
 			discount_per_item.setdefault(code, 0)
 			discount_per_item[code] += u["rate"]
 
+		print("[Promotion Engine] Calculated Free Units: {0}, Total Discount: {1}".format(len(free_units), total_discount))
+
 		# Apply to original items
 		affected = []
 		for item in eligible_items:
 			code = item.get("item_code")
-			if code in discount_per_item:
-				item.setdefault("promotion_discounts", []).append({
-					"promotion_id": promo.get("name"),
-					"promotion_type": "buy_x_get_y",
-					"discount_amount": discount_per_item[code],
-				})
-				affected.append(code)
+			if code in discount_per_item and discount_per_item[code] > 0:
+				# Ensure we don't apply more discount than the line's remaining value
+				line_total = flt(item.get("qty", 0)) * flt(item.get("rate", 0))
+				applied_so_far = sum(flt(d.get("discount_amount", 0)) for d in item.get("promotion_discounts", []))
+				remaining_value = max(0, line_total - applied_so_far)
+				
+				discount_to_apply = min(discount_per_item[code], remaining_value)
+				
+				if discount_to_apply > 0:
+					item.setdefault("promotion_discounts", []).append({
+						"promotion_id": promo.get("name"),
+						"promotion_type": "buy_x_get_y",
+						"discount_amount": discount_to_apply,
+					})
+					discount_per_item[code] -= discount_to_apply
+					if code not in affected:
+						affected.append(code)
 
 		return PromotionResult(
 			promo, success=True,
@@ -712,6 +728,7 @@ class PromotionEngine:
 		"""
 		# Deep copy to avoid mutating original
 		invoice = copy.deepcopy(invoice_data)
+		print("[Promotion Engine] Evaluating invoice with {0} items for branch: {1}".format(len(invoice.get("items", [])), branch))
 
 		# Fetch active promotions
 		promotions = self._get_active_promotions(branch)
