@@ -1563,24 +1563,21 @@ export const usePOSCartStore = defineStore("posCart", () => {
 				if (evaluation && evaluation.applied && evaluation.applied.length > 0) {
 					// Build discount map: item_code → total discount amount from promotions
 					const promoDiscountMap = {}
-					for (const result of evaluation.applied) {
-						if (!result.success) continue
-						// Each result has affected_items array and discount_amount
-						const affectedItems = result.affected_items || []
-						if (affectedItems.length > 0 && result.discount_amount > 0) {
-							// Check if the engine provided per-item discounts in the invoice
-							const engineItems = evaluation.invoice?.items || []
-							for (const engineItem of engineItems) {
-								const code = engineItem.item_code
-								const promoDiscounts = engineItem.promotion_discounts || []
-								for (const pd of promoDiscounts) {
-									if (pd.promotion_id === result.promotion_id || affectedItems.includes(code)) {
-										promoDiscountMap[code] = (promoDiscountMap[code] || 0) + (pd.discount_amount || 0)
-									}
-								}
-							}
-							// Fallback: distribute evenly if no per-item data or metadata is missing
-							if (Object.keys(promoDiscountMap).length === 0) {
+					const engineItems = evaluation.invoice?.items || []
+					for (const engineItem of engineItems) {
+						const code = engineItem.item_code
+						const promoDiscounts = engineItem.promotion_discounts || []
+						for (const pd of promoDiscounts) {
+							promoDiscountMap[code] = (promoDiscountMap[code] || 0) + (pd.discount_amount || 0)
+						}
+					}
+
+					// Fallback: distribute evenly if no per-item data
+					if (Object.keys(promoDiscountMap).length === 0) {
+						for (const result of evaluation.applied) {
+							if (!result.success) continue
+							const affectedItems = result.affected_items || []
+							if (affectedItems.length > 0 && result.discount_amount > 0) {
 								const targets = affectedItems.length > 0 ? affectedItems : invoiceItems.value.map(i => i.item_code)
 								if (targets.length > 0) {
 									const perItem = result.discount_amount / targets.length

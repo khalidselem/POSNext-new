@@ -685,6 +685,11 @@ export function useInvoice() {
 			discountAmount = roundCurrency(discountAmount + item._promo_discount)
 		}
 
+		// Cap the discount at the base amount to prevent negative totals
+		if (discountAmount > baseAmount) {
+			discountAmount = baseAmount
+		}
+
 		item.discount_amount = discountAmount
 		
 		// If we only have promo discount, sync percentage for UI visibility
