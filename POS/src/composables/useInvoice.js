@@ -692,10 +692,7 @@ export function useInvoice() {
 
 		item.discount_amount = discountAmount
 		
-		// If we only have promo discount, sync percentage for UI visibility
-		if (item.discount_percentage === 0 && discountAmount > 0 && baseAmount > 0) {
-			item.discount_percentage = (discountAmount / baseAmount) * 100
-		}
+		item.discount_amount = discountAmount
 
 		// Calculate tax based on inclusive/exclusive mode
 		// Use currency precision for all monetary calculations to match ERPNext
