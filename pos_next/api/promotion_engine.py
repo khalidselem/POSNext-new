@@ -920,3 +920,14 @@ def get_active_promotion_summary(branch=None):
 		result.append(p)
 
 	return result
+
+@frappe.whitelist()
+def debug_promotion_config(promo_name):
+	"""Temporary endpoint to check promotion configuration."""
+	engine = PromotionEngine()
+	config = engine._get_promotion_config(promo_name)
+	items = engine._get_promotion_items(promo_name)
+	return {
+		"config": config,
+		"items": items
+	}
